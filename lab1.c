@@ -221,10 +221,10 @@ int main() {
     BMPImage* binary_image = binarize_bmp(image,0.5f);
     write_bmp("binary.bmp", binary_image);
 
-
+    free_bmp(binary_image);
     free_bmp(new_image);
     free_bmp(image);
     free_bmp(grey_image);
-    free_bmp(binary_bmp);
+    
     return 0;
 }
