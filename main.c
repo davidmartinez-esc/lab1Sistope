@@ -146,6 +146,51 @@ void write_bmp(const char* filename, BMPImage* image) {
     fclose(file);
 }
 
+
+BMPImage* greyscale_bmp(BMPImage* image) {
+    BMPImage* new_image = (BMPImage*)malloc(sizeof(BMPImage));
+    new_image->width = image->width;
+    new_image->height = image->height;
+    new_image->data = (RGBPixel*)malloc(sizeof(RGBPixel) * image->width * image->height);
+
+    for (int y = 0; y < image->height; y++) {
+        for (int x = 0; x < image->width; x++) {
+            RGBPixel pixel = image->data[y * image->width + x];
+            unsigned char gray = (unsigned char)(0.3 * pixel.r + 0.59 * pixel.g + 0.11 * pixel.b);
+            pixel.r = pixel.g = pixel.b = gray;
+            new_image->data[y * image->width + x] = pixel;
+        }
+    }
+    return new_image;
+}
+
+
+BMPImage* binarize_bmp(BMPImage* image, float threshold) {
+    BMPImage* grayscale_image = greyscale_bmp(image); // Convertir la imagen a escala de grises
+
+    BMPImage* binarized_image = (BMPImage*)malloc(sizeof(BMPImage));
+    binarized_image->width = grayscale_image->width;
+    binarized_image->height = grayscale_image->height;
+    binarized_image->data = (RGBPixel*)malloc(sizeof(RGBPixel) * grayscale_image->width * grayscale_image->height);
+
+    for (int y = 0; y < grayscale_image->height; y++) {
+        for (int x = 0; x < grayscale_image->width; x++) {
+            RGBPixel pixel = grayscale_image->data[y * grayscale_image->width + x];
+            // Binarizar el pixel basado en el umbral
+            if (pixel.r > threshold * 255) {
+                pixel.r = pixel.g = pixel.b = 255; // Blanco
+            } else {
+                pixel.r = pixel.g = pixel.b = 0; // Negro
+            }
+            binarized_image->data[y * grayscale_image->width + x] = pixel;
+        }
+    }
+    free_bmp(grayscale_image);
+
+    return binarized_image;
+}
+
+
 int main() {
     const char* filename = "rb.bmp";
     BMPImage* image = read_bmp(filename);
@@ -167,7 +212,19 @@ int main() {
     BMPImage* new_image = saturate_bmp(image, 1.1f);
     write_bmp("saturated.bmp", new_image);
 
-    free_bmp(image);
+     
+    //0.3f 0.59f 0.11f
+    BMPImage* grey_image = greyscale_bmp(image);
+    write_bmp("grey.bmp", grey_image);
+
+      //0.3f 0.59f 0.11f
+    BMPImage* binary_image = binarize_bmp(image,0.5f);
+    write_bmp("binary.bmp", binary_image);
+
+
     free_bmp(new_image);
+    free_bmp(image);
+    free_bmp(grey_image);
+    free_bmp(binary_bmp);
     return 0;
 }
