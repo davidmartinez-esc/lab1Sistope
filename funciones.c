@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include "lab1.c"
+#include "funciones.h"
 
 // Entradas: Recibe un archivo con extensión.
 // Salidas: Retorna un puntero al archivo de imagen tipo BMP con el contenido que leyó del archivo. En caso contrario retorna NULL.
