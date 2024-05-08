@@ -199,3 +199,30 @@ BMPImage* binarize_bmp(BMPImage* image, float threshold) {
 
     return binarized_image;
 }
+
+
+
+int is_nearly_black(BMPImage* image, float threshold) {
+    int total_pixels = image->width * image->height;
+    int black_pixels = 0;
+
+    // Contar el número de píxeles negros en la imagen
+    for (int y = 0; y < image->height; y++) {
+        for (int x = 0; x < image->width; x++) {
+            RGBPixel pixel = image->data[y * image->width + x];
+            if (pixel.r <= 10 && pixel.g <= 10 && pixel.b <= 10){
+                black_pixels++;
+            }
+        }
+    }
+
+    // Calcular el porcentaje de píxeles negros en la imagen
+    float percentage_black = (float)black_pixels / total_pixels;
+
+    // Comprobar si el porcentaje de píxeles negros supera el umbral
+    if (percentage_black >= threshold) {
+        return 1; // La imagen es casi negra
+    } else {
+        return 0; // La imagen no es casi negra
+    }
+}

@@ -100,3 +100,14 @@ BMPImage* greyscale_bmp(BMPImage* image);
 // Una vez que se ha binarizado toda la imagen, se libera la memoria de la imagen en escala de grises y se retorna la imagen binarizada.
 
 BMPImage* binarize_bmp(BMPImage* image, float threshold);
+
+// Entradas: Un puntero a la image y un umbral entre 0 y 1 (float threshold).
+// Salidas: 1 si la imagen es clasificada como casi negra, 0 si no.
+// Descripción: Esta función determina si una imagen es casi negra basándose en el porcentaje de píxeles negros en la imagen. 
+// Para cada píxel de la imagen, se compara su valor de intensidad (escala de gris) con el valor de umbral especificado. 
+// Se considera que un píxel es negro si su valor de intensidad es igual o inferior a 10 (en una escala de 0 a 255). 
+// Se cuentan el número total de píxeles negros en la imagen y se calcula el porcentaje de píxeles negros en relación al total de píxeles. 
+// Si el porcentaje de píxeles negros es mayor o igual al umbral dado, la función retorna 1, indicando que la imagen es clasificada como casi negra. 
+// Si el porcentaje de píxeles negros es menor que el umbral, la función retorna 0, indicando que la imagen no es clasificada como casi negra.
+
+int is_nearly_black(BMPImage* image, float threshold);

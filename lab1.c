@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include "funciones.h"
 
-int main() {
+int main(int argc, char *argv[]) {
     const char* filename = "rb.bmp";
     BMPImage* image = read_bmp(filename);
     if (!image) {
@@ -33,6 +33,14 @@ int main() {
       //0.3f 0.59f 0.11f
     BMPImage* binary_image = binarize_bmp(image,0.5f);
     write_bmp("binary.bmp", binary_image);
+
+    int nearly_black = is_nearly_black(binary_image, 1.0); // Reemplaza el umbral, va entre 0 y 1
+
+    if (nearly_black) {
+        printf("La imagen es casi negra.\n");
+    } else {
+        printf("La imagen no es casi negra.\n");
+    }
 
     free_bmp(binary_image);
     free_bmp(new_image);
