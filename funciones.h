@@ -111,3 +111,16 @@ BMPImage* binarize_bmp(BMPImage* image, float threshold);
 // Si el porcentaje de píxeles negros es menor que el umbral, la función retorna 0, indicando que la imagen no es clasificada como casi negra.
 
 int is_nearly_black(BMPImage* image, float threshold);
+
+// Entradas: Un arreglo de punteros a cadenas que contienen los nombres de las imágenes, 
+// un arreglo de enteros que contiene las clasificaciones de las imágenes (int* classifications), 
+// y el número total de imágenes .
+// Salidas: Ninguna (void).
+// Descripción: Esta función crea un archivo CSV con los resultados de clasificación de las imágenes.
+// Toma como entrada un arreglo dinámico de nombres de imágenes y otro de clasificaciones,
+// junto con el número total de imágenes. Luego, crea un archivo CSV con dos columnas: una para los nombres de las imágenes
+// y otra para sus respectivas clasificaciones. Cada fila del archivo CSV representa una imagen y su clasificación correspondiente.
+// El archivo CSV se crea con el nombre especificado en el primer parámetro. Los datos se escriben en el archivo en formato CSV.
+// Después de crear el archivo CSV, la función lo cierra correctamente.
+
+void create_csv(const char* filename, char** image_names, int* classifications, int num_images);

@@ -201,8 +201,7 @@ BMPImage* binarize_bmp(BMPImage* image, float threshold) {
 }
 
 
-
-int is_nearly_black(BMPImage* image, float threshold) {
+int is_nearly_black(BMPImage* image, float threshold){
     int total_pixels = image->width * image->height;
     int black_pixels = 0;
 
@@ -225,4 +224,37 @@ int is_nearly_black(BMPImage* image, float threshold) {
     } else {
         return 0; // La imagen no es casi negra
     }
+}
+
+// Entradas: Un arreglo de punteros a cadenas que contienen los nombres de las imágenes (char** image_names), 
+// un arreglo de enteros que contiene las clasificaciones de las imágenes (int* classifications), 
+// y el número total de imágenes (int num_images).
+// Salidas: Ninguna (void).
+// Descripción: Esta función crea un archivo CSV con los resultados de clasificación de las imágenes.
+// Toma como entrada un arreglo dinámico de nombres de imágenes y otro de clasificaciones,
+// junto con el número total de imágenes. Luego, crea un archivo CSV con dos columnas: una para los nombres de las imágenes
+// y otra para sus respectivas clasificaciones. Cada fila del archivo CSV representa una imagen y su clasificación correspondiente.
+// El archivo CSV se crea con el nombre especificado en el primer parámetro. Los datos se escriben en el archivo en formato CSV.
+// Después de crear el archivo CSV, la función lo cierra correctamente.
+
+// Deja el "filename" como el parametro "-R" que se pide
+// El "image_names" es un arreglo de strings que tienes que crear de acuerdo a las imagenes que se pidieron, de ahi saca los nombres
+// El "classifications" es un arreglo donde le calculas el is_nearly_black a las imagenes y en ese arreglo guardas los resultados
+// EL "num_images" va directamente relacionado con la cantidad de filtros que pida en el "-f", por lo que lo sacas de ahí
+void create_csv(const char* filename, char** image_names, int* classifications, int num_images) {
+    FILE* file = fopen(filename, "w");
+    if (!file) {
+        fprintf(stderr, "Error: No se pudo abrir el archivo CSV.\n");
+        return;
+    }
+
+    // Escribir encabezado del archivo CSV
+    fprintf(file, "Nombre de la imagen,Clasificación\n");
+
+    // Escribir datos de las imágenes y sus clasificaciones en el archivo CSV
+    for (int i = 0; i < num_images; i++) {
+        fprintf(file, "%s,%d\n", image_names[i], classifications[i]);
+    }
+
+    fclose(file);
 }
