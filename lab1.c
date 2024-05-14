@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
         switch(option){
             case 'N':
                 strcpy(N, optarg);
-                
+                strcat(N,".bmp");
                 mandatoryN=1;
                 
                 break;
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
     }
     
 
-    strcat(N,".bmp");
+    
 
 
     const char* filename = N;
