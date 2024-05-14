@@ -5,6 +5,8 @@
 #include "funciones.h"
 #include <unistd.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 int main(int argc, char *argv[]) {
     char N[100];
@@ -14,13 +16,16 @@ int main(int argc, char *argv[]) {
     float u=0.5;
     float v=0.5;
     char C[100];
+
+    char pathSaturated[100]="./";
+    char pathGreyScale[100]="./";
+    char pathBinary[100]="./";
     
     int option;
     int mandatoryN=0;
     int mandatoryC=0;
     int mandatoryR=0;
 
-   const char* nombreArchivo = "resultados.csv";
     char* image_names[] = {"imagen1.jpg", "imagen2.jpg", "imagen3.jpg"};
     int classifications[] = {1, 0, 1};
     int num_images = sizeof(image_names) / sizeof(image_names[0]);
@@ -29,6 +34,7 @@ int main(int argc, char *argv[]) {
         switch(option){
             case 'N':
                 strcpy(N, optarg);
+                
                 mandatoryN=1;
                 
                 break;
@@ -37,6 +43,7 @@ int main(int argc, char *argv[]) {
                 break;
             case 'p':
                 p = atof(optarg);
+
                 break;
             case 'u':
                 u = atof(optarg);
@@ -50,6 +57,7 @@ int main(int argc, char *argv[]) {
                 break;
             case 'R':
                 strcpy(R,optarg);
+                strcat(R,".csv");
                 mandatoryR=1;
                 break;
         }
@@ -59,20 +67,23 @@ int main(int argc, char *argv[]) {
         printf("Se debe ingresar el nombre del prefijo de la imagen (img, imagen y photo)\n");
         return 1;
     }
+    
     if(mandatoryC == 0){
         printf("Se debe ingresar el nombre de la carpeta con los archivos resultantes \n");
         return 1;
     }
+
+    
     if(mandatoryR == 0){
         printf("Se debe ingresar el nombre del archivo .csv con las clasificaciones \n");
         return 1;
     }
     
 
-    
+    strcat(N,".bmp");
 
 
-    const char* filename = "rb.bmp";
+    const char* filename = N;
     BMPImage* image = read_bmp(filename);
     if (!image) {
         return 1;
@@ -89,19 +100,44 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    BMPImage* new_image = saturate_bmp(image, 1.1f);
-    write_bmp("saturated.bmp", new_image);
+        mkdir(C,S_IRWXU);
+
+        strcat(pathSaturated,C);
+        strcat(pathSaturated,"/saturated.bmp");
+
+        strcat(pathGreyScale,C);
+        strcat(pathGreyScale,"/grey.bmp");
+
+        strcat(pathBinary,C);
+        strcat(pathBinary,"/binary.bmp");
+
+        // 1.1f
+        BMPImage* new_image = saturate_bmp(image,p);
+
+        if(f>=1){
+            write_bmp(pathSaturated, new_image);
+        }
+    
+        BMPImage* grey_image = greyscale_bmp(image);
+        if(f>=2){
+            write_bmp(pathGreyScale, grey_image);
+        }
+        
+        BMPImage* binary_image = binarize_bmp(image,u);
+        if(f==3){
+            write_bmp(pathBinary, binary_image);
+        }
+        
+    
+   
 
      
     //0.3f 0.59f 0.11f
-    BMPImage* grey_image = greyscale_bmp(image);
-    write_bmp("grey.bmp", grey_image);
+    
 
       //0.3f 0.59f 0.11f
-    BMPImage* binary_image = binarize_bmp(image,0.5f);
-    write_bmp("binary.bmp", binary_image);
 
-    int nearly_black = is_nearly_black(binary_image, 1.0); // Reemplaza el umbral, va entre 0 y 1
+    int nearly_black = is_nearly_black(binary_image, v); // Reemplaza el umbral, va entre 0 y 1
 
     if (nearly_black) {
         printf("La imagen es casi negra.\n");
@@ -109,14 +145,20 @@ int main(int argc, char *argv[]) {
         printf("La imagen no es casi negra.\n");
     }
     
-    printf("Los valores ingresados son:\n  N=%s\n  f=%i\n  p=%f u=%f v=%f C=%s R=%s \n",N, f, p,u,v,C,R);
+    printf("Los valores ingresados son:\n  PREFIJO=%s\n  numerodefiltros(f)=%i\n factor de saturacion(p)=%f \n Umbral para binarizar(u)=%f \n Umbral para clasificar(v)=%f \n C=%s \n R=%s \n",N, f, p,u,v,C,R);
+    printf("STRING %s",pathSaturated);
 
-    create_csv(nombreArchivo, image_names, classifications, num_images);
+    create_csv(R, image_names, classifications, num_images);
 
-    free_bmp(binary_image);
+    
     free_bmp(new_image);
-    free_bmp(image);
+    
     free_bmp(grey_image);
+  
+    free_bmp(binary_image);
+    
+    free_bmp(image);
+
     
     return 0;
 }
