@@ -13,5 +13,9 @@ COMANDOS DE PRUEBA EN LINUX
 
 ./lab1 -p 1.3 -N rb -C finale -R log 
 
+./lab1 -p 1.4 -N rb -C finale -R log 
+
+./lab1 -p 1.4 -u 1 -N rb -C finale -R log 
+
 
 

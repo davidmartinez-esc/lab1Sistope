@@ -26,8 +26,8 @@ int main(int argc, char *argv[]) {
     int mandatoryC=0;
     int mandatoryR=0;
 
-    char* image_names[] = {"imagen1.jpg", "imagen2.jpg", "imagen3.jpg"};
-    int classifications[] = {1, 0, 1};
+    char* image_names[] = {"saturated.bpm", "grey.bpm", "binary.bpm"};
+    int classifications[] = {0, 0, 0};
     int num_images = sizeof(image_names) / sizeof(image_names[0]);
 
     while((option = getopt(argc, argv, "N:f:p:u:v:C:R:")) != -1){
@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
             write_bmp(pathGreyScale, grey_image);
         }
         
-        BMPImage* binary_image = binarize_bmp(image,u);
+        BMPImage* binary_image = binarize_bmp(grey_image,u);
         if(f==3){
             write_bmp(pathBinary, binary_image);
         }
@@ -136,10 +136,11 @@ int main(int argc, char *argv[]) {
     
 
       //0.3f 0.59f 0.11f
+    int isSaturatedNearly_black = is_nearly_black(new_image, v);
+    //int isGreyNearly_black = is_nearly_black(grey_image, v);
+    //int isBinaryNearly_black = is_nearly_black(binary_image, v); // Reemplaza el umbral, va entre 0 y 1
 
-    int nearly_black = is_nearly_black(binary_image, v); // Reemplaza el umbral, va entre 0 y 1
-
-    if (nearly_black) {
+    if (isSaturatedNearly_black==0) {
         printf("La imagen es casi negra.\n");
     } else {
         printf("La imagen no es casi negra.\n");

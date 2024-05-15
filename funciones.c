@@ -175,8 +175,8 @@ BMPImage* greyscale_bmp(BMPImage* image) {
 // se asigna negro al píxel en la imagen binarizada. 
 // Una vez que se ha binarizado toda la imagen, se libera la memoria de la imagen en escala de grises y se retorna la imagen binarizada.
 
-BMPImage* binarize_bmp(BMPImage* image, float threshold) {
-    BMPImage* grayscale_image = greyscale_bmp(image); // Convertir la imagen a escala de grises
+BMPImage* binarize_bmp(BMPImage* grayscale_image, float threshold) {
+    //BMPImage* grayscale_image = greyscale_bmp(image); Convertir la imagen a escala de grises
 
     BMPImage* binarized_image = (BMPImage*)malloc(sizeof(BMPImage));
     binarized_image->width = grayscale_image->width;
@@ -195,7 +195,7 @@ BMPImage* binarize_bmp(BMPImage* image, float threshold) {
             binarized_image->data[y * grayscale_image->width + x] = pixel;
         }
     }
-    free_bmp(grayscale_image);
+    
 
     return binarized_image;
 }
