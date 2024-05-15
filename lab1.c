@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 
 int main(int argc, char *argv[]) {
+    // Se crean las variables para el getopt, la clasificacion de las imagenes y la creacion de estas
     char N[100];
     char R[100];
     int f=3;
@@ -28,7 +29,7 @@ int main(int argc, char *argv[]) {
 
     char* image_names[] = {"saturated.bpm", "grey.bpm", "binary.bpm"};
     int classifications[] = {0, 0, 0};
-    int num_images = sizeof(image_names) / sizeof(image_names[0]);
+    //int num_images = sizeof(image_names) / sizeof(image_names[0]);
 
     while((option = getopt(argc, argv, "N:f:p:u:v:C:R:")) != -1){
         switch(option){
@@ -63,6 +64,16 @@ int main(int argc, char *argv[]) {
         }
     }
     
+    if(f<=0){
+        printf("La flag f no puede tomar el valor 0 o menor que este");
+        return 1;
+    }
+
+    if(p<=0){
+        printf("La flag p no puede tomar el valor 0 o menor que este");
+        return 1;
+    }
+
     if(mandatoryN == 0){
         printf("Se debe ingresar el nombre del prefijo de la imagen (img, imagen y photo)\n");
         return 1;
@@ -73,15 +84,12 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    
     if(mandatoryR == 0){
         printf("Se debe ingresar el nombre del archivo .csv con las clasificaciones \n");
         return 1;
     }
     
-
-    
-
+    // Se lee la imagen que se desea procesar
 
     const char* filename = N;
     BMPImage* image = read_bmp(filename);
@@ -99,7 +107,7 @@ int main(int argc, char *argv[]) {
             printf("Pixel (%d, %d): R=%d, G=%d, B=%d\n", x, y, pixel.r, pixel.g, pixel.b);
         }
     }
-
+    // Se crean las imagenes y se escriben solamente las deseadas
         mkdir(C,S_IRWXU);
 
         strcat(pathSaturated,C);
@@ -119,39 +127,43 @@ int main(int argc, char *argv[]) {
         }
     
         BMPImage* grey_image = greyscale_bmp(image);
+
         if(f>=2){
             write_bmp(pathGreyScale, grey_image);
         }
         
         BMPImage* binary_image = binarize_bmp(grey_image,u);
-        if(f==3){
+        
+        if(f>=3){
             write_bmp(pathBinary, binary_image);
         }
         
-    
-   
-
-     
-    //0.3f 0.59f 0.11f
-    
-
-      //0.3f 0.59f 0.11f
+    // Se hace la clasificacion de cada imagen creada
     int isSaturatedNearly_black = is_nearly_black(new_image, v);
-    //int isGreyNearly_black = is_nearly_black(grey_image, v);
-    //int isBinaryNearly_black = is_nearly_black(binary_image, v); // Reemplaza el umbral, va entre 0 y 1
+    int isGreyNearly_black = is_nearly_black(grey_image, v);
+    int isBinaryNearly_black = is_nearly_black(binary_image, v);
 
-    if (isSaturatedNearly_black==0) {
+
+    // Se asigna cada espacio del arreglo a su clasificacion si es casi negro
+    classifications[0]=isSaturatedNearly_black;
+    classifications[1]=isGreyNearly_black;
+    classifications[2]=isBinaryNearly_black;
+    
+    /*
+    if (isSaturatedNearly_black==1) {
         printf("La imagen es casi negra.\n");
     } else {
         printf("La imagen no es casi negra.\n");
     }
-    
-    printf("Los valores ingresados son:\n  PREFIJO=%s\n  numerodefiltros(f)=%i\n factor de saturacion(p)=%f \n Umbral para binarizar(u)=%f \n Umbral para clasificar(v)=%f \n C=%s \n R=%s \n",N, f, p,u,v,C,R);
-    printf("STRING %s",pathSaturated);
+    */
 
-    create_csv(R, image_names, classifications, num_images);
+    //printf("Los valores ingresados son:\n  PREFIJO=%s\n  numerodefiltros(f)=%i\n factor de saturacion(p)=%f \n Umbral para binarizar(u)=%f \n Umbral para clasificar(v)=%f \n C=%s \n R=%s \n",N, f, p,u,v,C,R);
+    //printf("STRING %s",pathSaturated);
 
-    
+    // Se crea el archivo csv con las clasificaciones
+    create_csv(R, image_names, classifications, f);
+
+    // Se libera cada imagen
     free_bmp(new_image);
     
     free_bmp(grey_image);
