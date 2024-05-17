@@ -8,6 +8,22 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+/*
+LABORATORIO DESARROLLADO POR 
+
+CLAUDIO MATIAS PALMA PEREZ SECCION ACOSTA 20.680.606-0
+DAVID ENRIQUE MARTINEZ ESCARES 20.882.683-2
+
+CONSIDERACIONES:
+
+Cuando se genera la carpeta con las imagenes no se genera de inmediato las imagenes
+debe entrar y salir varias veces de la carpeta que se genera para que se muestren las que Ud. generó
+
+Laboratorio basado en el aporte de codigo que mandó el ayudante Ian Rickmers
+
+Laboratorio testeado en Ubuntu 22.04.4 LTS
+*/
+
 int main(int argc, char *argv[]) {
     // Se crean las variables para el getopt, la clasificacion de las imagenes y la creacion de estas
     char N[100];
@@ -18,6 +34,10 @@ int main(int argc, char *argv[]) {
     float v=0.5;
     char C[100];
 
+    int underscorePosition;
+    char exampleFilename[10];
+    char *underscorePtr;
+
     char pathSaturated[100]="./";
     char pathGreyScale[100]="./";
     char pathBinary[100]="./";
@@ -26,7 +46,7 @@ int main(int argc, char *argv[]) {
     int mandatoryN=0;
     int mandatoryC=0;
     int mandatoryR=0;
-
+    //Aqui definimos los nombres que tendrán las imagenes con los filtros aplicados, por ahora todas tendran el mismo nombre
     char* image_names[] = {"saturated.bpm", "grey.bpm", "binary.bpm"};
     int classifications[] = {0, 0, 0};
     //int num_images = sizeof(image_names) / sizeof(image_names[0]);
@@ -35,7 +55,7 @@ int main(int argc, char *argv[]) {
         switch(option){
             case 'N':
                 strcpy(N, optarg);
-                strcat(N,".bmp");
+                
                 mandatoryN=1;
                 
                 break;
@@ -64,13 +84,23 @@ int main(int argc, char *argv[]) {
         }
     }
     
-    if(f<=0){
-        printf("La flag f no puede tomar el valor 0 o menor que este");
+    if(f<=0 || f>3){
+        printf("La flag f solo puede tomar los valores 1,2,3 \n");
         return 1;
     }
 
     if(p<=0){
         printf("La flag p no puede tomar el valor 0 o menor que este");
+        return 1;
+    }
+
+    if(u<0 || u>1){
+         printf("La flag u puede tomar valores entre 0 y 1 (incluyendolos)");
+        return 1;
+    }
+
+     if(v<0 || v>1){
+         printf("La flag v puede tomar valores entre 0 y 1 (incluyendolos)");
         return 1;
     }
 
@@ -88,6 +118,45 @@ int main(int argc, char *argv[]) {
         printf("Se debe ingresar el nombre del archivo .csv con las clasificaciones \n");
         return 1;
     }
+    
+    /*
+    Lo de aqui abajo es para que siga el formato imagen_N, photo_N, img_N
+    Tambien dejamos habilitado que pueda ponerse imagen, img, photo sin el _N al final, ya que en el ejemplo
+    del pdf III.H.Línea de comando el ejemplo que dan es -N imagen sin nada mas
+    */
+    strncpy(exampleFilename,N,4);    
+    if(strcmp(exampleFilename,"img")!=0){
+        strncpy(exampleFilename,N,6);
+
+        if(strcmp(exampleFilename,"photo")!=0){
+            strncpy(exampleFilename,N,7);
+
+            if(strcmp(exampleFilename,"imagen")!=0){
+                underscorePtr = strchr(N, '_');
+
+                if(underscorePtr == NULL)
+                {
+                    printf("El string no tiene el caracter _ \n");
+                    return 1;
+                }
+                underscorePosition=underscorePtr-N;
+                if(underscorePosition!=3 && underscorePosition!=5 && underscorePosition!=6){
+
+                    printf("El nombre que usted ingresó no sigue el formato que usa de prefijo image, img o photo  \n");
+                    return 1;
+                }
+                if(atoi(underscorePtr+1)==0){
+                    printf("El nombre de archivo que usted ingresó no sigue el formato image_N, photo_N o img_N siendo N un entero \n");
+                    return 1;
+                }
+
+            }
+        }
+
+    }
+
+    //Aqui le pongo la extension al nombre del archivo ingresado con la flag -N
+    strcat(N,".bmp");
     
     // Se lee la imagen que se desea procesar
 
@@ -107,7 +176,7 @@ int main(int argc, char *argv[]) {
             printf("Pixel (%d, %d): R=%d, G=%d, B=%d\n", x, y, pixel.r, pixel.g, pixel.b);
         }
     }
-    // Se crean las imagenes y se escriben solamente las deseadas
+    
         mkdir(C,S_IRWXU);
 
         strcat(pathSaturated,C);
@@ -120,13 +189,17 @@ int main(int argc, char *argv[]) {
         strcat(pathBinary,"/binary.bmp");
 
         // 1.1f
+        // Se crean todas las imagenes, independiente de lo que el usuario ingresó, pero solo se generan los archivos
+        //de las imagenes que el usuario desea (por eso solo los write_bmp estan dentro de un if)
+        //esto se hizo así ya que no se queria andar viendo que imagen se crea, cual imagen hay que liberar, cual imagen hay que escribir en el .csv y asi
+
         BMPImage* new_image = saturate_bmp(image,p);
 
         if(f>=1){
             write_bmp(pathSaturated, new_image);
         }
     
-        BMPImage* grey_image = greyscale_bmp(image);
+        BMPImage* grey_image = greyscale_bmp(new_image);
 
         if(f>=2){
             write_bmp(pathGreyScale, grey_image);
@@ -149,6 +222,7 @@ int main(int argc, char *argv[]) {
     classifications[1]=isGreyNearly_black;
     classifications[2]=isBinaryNearly_black;
     
+    //Dejamos esto por si la persona que revisa quiere testear la clasificacion d euna forma mas visual
     /*
     if (isSaturatedNearly_black==1) {
         printf("La imagen es casi negra.\n");
@@ -157,8 +231,9 @@ int main(int argc, char *argv[]) {
     }
     */
 
+    //Esto tambien lo dejamos para que la persona que revisa lo descomente y pruebe para que vea los valores de las variables
     //printf("Los valores ingresados son:\n  PREFIJO=%s\n  numerodefiltros(f)=%i\n factor de saturacion(p)=%f \n Umbral para binarizar(u)=%f \n Umbral para clasificar(v)=%f \n C=%s \n R=%s \n",N, f, p,u,v,C,R);
-    //printf("STRING %s",pathSaturated);
+    //printf("STRING %s Largo de la cadena %i \n",pathSaturated,(int)strlen(pathSaturated));
 
     // Se crea el archivo csv con las clasificaciones
     create_csv(R, image_names, classifications, f);
