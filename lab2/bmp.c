@@ -17,7 +17,7 @@ BMPImage* read_bmp(const char* filename) {
     image->height = height;
     image->data = (RGBPixel*)malloc(width * height * sizeof(RGBPixel));
 
-    for (int y = 0
+    
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             fread(&image->data[y * width + x], sizeof(RGBPixel), 1, file);

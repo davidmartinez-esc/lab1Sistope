@@ -64,6 +64,7 @@ int main(int argc, char *argv[]) {
     write_bmp("output.bmp", processed_image);
     free_bmp(image);
     free_bmp(processed_image);
-
+	
+    printf("Se terminó el broker señores");
     return 0;
 }

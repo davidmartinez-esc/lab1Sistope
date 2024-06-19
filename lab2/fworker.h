@@ -16,5 +16,6 @@ typedef struct {
 } BMPFragment;
 
 BMPImage* apply_filters(BMPFragment* fragment);
+BMPImage* fragment_to_image(BMPFragment* fragment);
 
 #endif

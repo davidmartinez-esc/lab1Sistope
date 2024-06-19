@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/wait.h>
 
 int main(int argc, char *argv[]) {
     // Variables para getopt y las configuraciones de imagen
@@ -60,11 +61,36 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    // Imprimir argumentos para depuración
+    printf("Argumentos recibidos:\n");
+    printf("N: %s\n", N);
+    printf("R: %s\n", R);
+    printf("C: %s\n", C);
+    printf("f: %d\n", f);
+    printf("p: %.2f\n", p);
+    printf("u: %.2f\n", u);
+    printf("v: %.2f\n", v);
+    printf("W: %d\n", w);
+
     // Crear proceso broker
+    printf("Creando proceso broker...\n");
     pid_t pid = fork();
     if (pid == 0) {
         // Proceso hijo
-        char *args[] = {"./broker", N, C, R, argv[2], argv[4], argv[6], argv[8], argv[10], argv[12], NULL};
+        char f_str[10], p_str[10], u_str[10], v_str[10], w_str[10];
+        sprintf(f_str, "%d", f);
+        sprintf(p_str, "%.2f", p);
+        sprintf(u_str, "%.2f", u);
+        sprintf(v_str, "%.2f", v);
+        sprintf(w_str, "%d", w);
+
+        char *args[] = {"./broker", N, C, R, f_str, p_str, u_str, v_str, w_str, NULL};
+        printf("Ejecutando broker con args: ");
+        for (int i = 0; args[i] != NULL; i++) {
+            printf("%s ", args[i]);
+        }
+        printf("\n");
+
         execv(args[0], args);
         perror("execv");
         exit(EXIT_FAILURE);
@@ -74,6 +100,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Esperar a que el broker termine
-    wait(NULL);
+    int status;
+    wait(&status);
+    printf("Broker terminado con estado %d\n", WEXITSTATUS(status));
+
     return 0;
 }

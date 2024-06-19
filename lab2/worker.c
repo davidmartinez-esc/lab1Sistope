@@ -10,6 +10,6 @@ int main() {
     BMPImage* fragment_image = apply_filters(&fragment);
     write(STDOUT_FILENO, fragment_image, sizeof(*fragment_image) + fragment_image->width * fragment_image->height * sizeof(RGBPixel));
     free_bmp(fragment_image);
-
+	printf("Se terminó el worker señores");
     return 0;
 }
