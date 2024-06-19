@@ -35,25 +35,27 @@ int main(int argc, char *argv[]) {
     float v=0.5;
     char C[100];
     pid_t pid;
+    int W=1;
 
-    int underscorePosition;
-    char exampleFilename[10];
-    char *underscorePtr;
-
-    char pathSaturated[100]="./";
-    char pathGreyScale[100]="./";
-    char pathBinary[100]="./";
-    
     int option;
     int mandatoryN=0;
     int mandatoryC=0;
     int mandatoryR=0;
+
+    int underscorePosition;
+    char exampleFilename[10];
+    char *underscorePtr;
     //Aqui definimos los nombres que tendrán las imagenes con los filtros aplicados, por ahora todas tendran el mismo nombre
-    char* image_names[] = {"saturated.bpm", "grey.bpm", "binary.bpm"};
-    int classifications[] = {0, 0, 0};
+    
     //int num_images = sizeof(image_names) / sizeof(image_names[0]);
 
-    while((option = getopt(argc, argv, "N:f:p:u:v:C:R:")) != -1){
+    char bufferF[10];
+    char bufferP[10]; 
+    char bufferU[10]; 
+    char bufferV[10];
+    char bufferW[10];   
+
+    while((option = getopt(argc, argv, "N:f:p:u:v:C:R:W:")) != -1){
         switch(option){
             case 'N':
                 strcpy(N, optarg);
@@ -82,6 +84,9 @@ int main(int argc, char *argv[]) {
                 strcpy(R,optarg);
                 strcat(R,".csv");
                 mandatoryR=1;
+                break;
+            case 'W':
+                W= atoi(optarg);
                 break;
         }
     }
@@ -168,9 +173,14 @@ int main(int argc, char *argv[]) {
     if(pid == 0){
         
         printf("Soy el hijo \n");
+        sprintf(bufferF, "%d", f);
+        sprintf(bufferP, "%f", p);
+        sprintf(bufferU, "%f", u);
+        sprintf(bufferV, "%f", v);
+        sprintf(bufferW, "%i", W);
 
          // Se lee la imagen que se desea procesar
-        char* argv[]={"./broker", "1", "2", NULL};
+        char* argv[]={"./broker", N, bufferF,bufferP,bufferU,bufferV,bufferW,C,R,NULL};
          // Para poder ejecutar debe existir el ejecutable
         execv(argv[0], argv);
     }
