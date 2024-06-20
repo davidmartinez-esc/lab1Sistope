@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
 
     if(pid == 0){
         
-        printf("Soy el hijo \n");
+        printf("IM THE BROKER \n");
         sprintf(bufferF, "%d", f);
         sprintf(bufferP, "%f", p);
         sprintf(bufferU, "%f", u);
@@ -186,7 +186,7 @@ int main(int argc, char *argv[]) {
     }
     // Si el pid es > a 0 significa que es el proceso padre
     else{
-        printf("Soy el padre, A: \n");
+        printf("Soy el MAIN \n");
         waitpid(pid, NULL, 0);
 
     }
@@ -197,6 +197,6 @@ int main(int argc, char *argv[]) {
     // printf no se muestra
    
 
-    printf("Terminó el main \n");
+    printf("Terminó el MAIN \n");
     return 0;
 }

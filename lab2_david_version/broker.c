@@ -7,7 +7,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-
+#include <sys/wait.h>
 
 
 int main(int argc, char *argv[]) {
@@ -24,8 +24,6 @@ int main(int argc, char *argv[]) {
     strcpy(C,argv[7]);
     strcpy(R,argv[8]);
 
-
-
     char pathSaturated[100]="./";
     char pathGreyScale[100]="./";
     char pathBinary[100]="./";
@@ -33,13 +31,68 @@ int main(int argc, char *argv[]) {
     char* image_names[] = {"saturated.bpm", "grey.bpm", "binary.bpm"};
     int classifications[] = {0, 0, 0};
 
-  
+    char bufferWidth[10];
+    char bufferHeight[10];
 
-   
+    pid_t workers[W];
+    int fd[2];
+    int i;
+
+
+    const char* filename = N;
+    BMPImage* image = read_bmp(filename);
+
+    if (!image) {
+        exit(1);
+        return 1;
+    }
+
+    printf("Ancho de la imagen: %d\n", image->width);
+    printf("Alto de la imagen: %d\n", image->height);
+
+    // Acceder a los píxeles de la imagen
+    for (int y = 0; y < image->height; y++) {
+        for (int x = 0; x < image->width; x++) {
+            RGBPixel pixel = image->data[y * image->width + x];
+            printf("Pixel (%d, %d): R=%d, G=%d, B=%d\n", x, y, pixel.r, pixel.g, pixel.b);
+        }
+    }
+
+    for (i = 0; i < W; ++i) {
+        workers[i] = fork();
+
+        if (workers[i] == 0) {
+
+            printf("SOY UN WORKER, MI NUMERO ES %d CON PID %d\n", i+1, getpid());
+
+            sprintf(bufferHeight, "%d", image->height);
+            sprintf(bufferWidth, "%d", image->width);
+
+            char* argv[]={"./worker", bufferHeight, bufferWidth,NULL};
+
+            execv(argv[0], argv);
+            sleep(1); 
+            return 0; 
+        } else if (workers[i] < 0) {
+            // Error al hacer fork
+            perror("fork");
+        } else {
+            // Proceso padre
+            printf("CREADO WORKER %d CON PID %d\n", i+1, workers[i]);
+        }
+    }
+
+    // Esperar a que todos los hijos terminen
+    for (i = 0; i < W; ++i) {
+        waitpid(workers[i], NULL, 0);
+    }
+
+  
+    free_bmp(image);
 
     printf("EL nombre del archivo es %s \n",N);
     printf("Los valores ingresados son:\n NombreArchivo=%s\n numerodefiltros(f)=%i\n factor de saturacion(p)=%f \n Umbral para binarizar(u)=%f \n Umbral para clasificar(v)=%f \n NombreCarpeta(C)=%s \n NombreLogCsv(R)=%s \n numerodetrabajdores(W)=%i\n",N, f, p,u,v,C,R,W);
-    printf("Terminó el broker \n");
+    printf("Terminó el BROKER \n");
     exit(21);
     return 0;
 }
