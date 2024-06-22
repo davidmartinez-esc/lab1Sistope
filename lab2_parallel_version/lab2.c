@@ -172,7 +172,7 @@ int main(int argc, char *argv[]) {
 
     if(pid == 0){
         
-        printf("IM THE BROKER \n");
+
         sprintf(bufferF, "%d", f);
         sprintf(bufferP, "%f", p);
         sprintf(bufferU, "%f", u);

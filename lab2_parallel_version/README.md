@@ -21,5 +21,6 @@ COMANDOS DE PRUEBA EN LINUX
 
 gcc worker.c funciones.c -o worker
 gcc broker.c funciones.c -o broker
+gcc lab2.c funciones.c  -o SALIDA
 
 
