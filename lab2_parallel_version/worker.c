@@ -8,14 +8,66 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-BMPImage*  readBMPImage(int readEnd,int width,int height) {
-    BMPImage* image = (BMPImage*)malloc(sizeof(BMPImage));
-    image->width = width;
-    image->height = height;
-    image->data = (RGBPixel *)malloc(width* height * sizeof(RGBPixel));
 
-    size_t size=width * height * sizeof(RGBPixel);
-    read(readEnd, image->data, size);
+BMPImage* receive_image_from_pipe(int fd) {
+    size_t image_size;
+    BMPImage *image;
+    size_t data_size;
+
+    // Leer el tamaño total de los datos que se van a recibir
+    if (read(fd, &image_size, sizeof(size_t)) < sizeof(size_t)) {
+        perror("Error al leer el tamaño de la imagen desde el pipe");
+        return NULL;
+    }
+
+    // Verificar que el tamaño sea válido
+    if (image_size < sizeof(BMPImage)) {
+        fprintf(stderr, "Tamaño de imagen recibido inválido.\n");
+        return NULL;
+    }
+
+    // Almacenar el tamaño de los datos de píxeles
+    data_size = image_size - sizeof(BMPImage);
+
+    // Asignar memoria para la imagen
+    image = (BMPImage*)malloc(sizeof(BMPImage));
+    if (!image) {
+        perror("Error al asignar memoria para la imagen BMP");
+        return NULL;
+    }
+
+    // Leer la estructura BMPImage del pipe
+    if (read(fd, image, sizeof(BMPImage)) < sizeof(BMPImage)) {
+        perror("Error al leer la estructura BMPImage desde el pipe");
+        free(image);
+        return NULL;
+    }
+
+    // Asignar memoria para los datos de píxeles
+    image->data = (RGBPixel*)malloc(sizeof(RGBPixel) * image->width * image->height);
+    if (!image->data) {
+        perror("Error al asignar memoria para los datos de píxeles");
+        free(image);
+        return NULL;
+    }
+
+    RGBPixel pixel;
+ 
+    read(fd, &pixel, sizeof(RGBPixel));
+    image->data[1 * image->width + 20] = pixel;
+
+    // Leer los datos de píxeles del pipe
+    /*
+    if (read(fd, image->data, data_size) < data_size) {
+        perror("Error al leer los datos de píxeles desde el pipe");
+        free(image->data);
+        free(image);
+        return NULL;
+    }
+    */
+    
+
+    return image;
 }
 
 int main(int argc, char *argv[]) {
@@ -26,12 +78,24 @@ int main(int argc, char *argv[]) {
     int indexPipe=atoi(argv[3]);
     char buffer[10];
 
-    BMPImage* imagenLeida=readBMPImage(indexPipe,width,height);
+
+    BMPImage* nuevaImagen = receive_image_from_pipe(indexPipe);
+
+    //read(indexPipe,nuevaImagen, sizeof(BMPImage));
+    
+    printf("EL ANCHO DE LA IMAGEN LEIDA DIRECTAMENTE DESDE LA IMAGEN ES %d \n",nuevaImagen->width);
+    
+    RGBPixel pixel = nuevaImagen->data[1 * nuevaImagen->width + 20];
+    printf("EL SINGULAR PIXEL ENVIADO POR EL BROKER AL WORKER R=%d, G=%d, B=%d\n", pixel.r, pixel.g, pixel.b);
 
     printf("    EL INDEX DEL READ DEL PIPE ES %d \n",indexPipe);
     //read(indexPipe, buffer, sizeof(char)*10);
     //printf("    EL MENSAJE LEIDO ES %s \n",buffer);
+   
+    printf("  WORKER Ancho de la imagen: %d\n", width);
+    printf("   WORKER Alto de la imagen: %d\n", height);
     printf("    Terminó el WORKER con PID %d\n",getpid());
+
     exit(21);
     return 0;
 }

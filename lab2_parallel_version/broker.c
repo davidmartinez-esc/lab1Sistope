@@ -9,9 +9,28 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-void writeBMPImage(int fd, BMPImage *image) {
-    size_t size=image->width * image->height * sizeof(RGBPixel);
-    write(fd, image->data, size);
+void send_image_through_pipe(int fd, BMPImage *image) {
+    printf("EMPEZÓ EL SEND IMAGE \n");
+    size_t image_size;
+    size_t data_size = image->width * image->height * sizeof(RGBPixel);
+
+    // Calcular el tamaño total que se va a enviar (tamaño de la estructura + datos)
+    image_size = sizeof(BMPImage) + data_size;
+
+    // Escribir el tamaño primero para que el receptor sepa cuánto leer
+    write(fd, &image_size, sizeof(size_t));
+
+    // Luego escribir la estructura BMPImage
+    write(fd, image, sizeof(BMPImage));
+    
+    RGBPixel pixel = image->data[1 * image->width + 20];
+    printf("Pixel R=%d, G=%d, B=%d\n", pixel.r, pixel.g, pixel.b);
+    write(fd,&pixel,sizeof(RGBPixel));
+    // Y finalmente los datos de píxeles
+    //write(fd, image->data, data_size);
+    printf("SE EJECUTÓ ENVIAR COSAS POR EL PIPE DE FORMA EFECTIVA\n");
+
+    return;
 }
 
 int main(int argc, char *argv[]) {
@@ -41,7 +60,7 @@ int main(int argc, char *argv[]) {
 
     pid_t workers[W];
    
-    int i;
+    int i=0;
 
     int fd[2];
 
@@ -74,12 +93,12 @@ int main(int argc, char *argv[]) {
     */
     
 
-    for (i = 0; i < W; ++i) {
-        workers[i] = fork();
+    
+    workers[0] = fork();
 
-        if (workers[i] == 0) {
-            
-            printf("    SOY UN WORKER, MI NUMERO ES %d CON PID %d\n", i+1, getpid());
+    if (workers[0] == 0) {
+            //SOY EL HIJO
+            printf("    SOY UN WORKER, MI NUMERO ES %d CON PID %d\n", 1, getpid());
 
             
             sprintf(bufferHeight, "%d", image->height);
@@ -91,30 +110,27 @@ int main(int argc, char *argv[]) {
             execv(argv[0], argv);
             sleep(1); 
             return 0; 
-        } else if (workers[i] < 0) {
+    } else if (workers[0] < 0) {
             // Error al hacer fork
             perror("fork");
-        } else {
-            // Proceso padre
-
-            //close(fd[0]);
-
-            printf("JUSTO ANTES DEL WRITE DE LA IMAGEN");
-            write(fd[1],image, sizeof(BMPImage));
+    } else {
+        //SOY EL PADRE
+            char buffer[10]="2121";
+    
+            printf("  CREADO WORKER %d CON PID %d\n", i+1, workers[0]);
+            printf("JUSTO ANTES DEL WRITE DEL PIPE DE LA IMAGEN \n");
+            //write(fd[1], buffer, sizeof(char)*10);
+            send_image_through_pipe(fd[1],image);
             
-
-            printf("  CREADO WORKER %d CON PID %d\n", i+1, workers[i]);
-
          
         }
-    }
+    
 
     // Esperar a que todos los hijos terminen
-    for (i = 0; i < W; ++i) {
-        waitpid(workers[i], NULL, 0);
-    }
 
-  
+    wait(NULL);
+
+    printf("ANTES DEL FREE");
     free_bmp(image);
 
     printf("  EL nombre del archivo es %s \n",N);
