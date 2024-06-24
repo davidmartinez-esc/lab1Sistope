@@ -81,33 +81,9 @@ BMPImage receive_image_from_pipe(int fd) {
     BMPImage image;
  
 
-    // Verificar que el tamaño sea válido
-    
-    // Almacenar el tamaño de los datos de píxeles
-
-    // Asignar memoria para la imagen
-
-   
-
     // Leer la estructura BMPImage del pipe
     read(fd, &image, sizeof(BMPImage));
        
-
-    // Asignar memoria para los datos de píxeles
-    //image->data = (RGBPixel*)malloc(sizeof(RGBPixel) * image->width * image->height);
-
-    
-    /*
-
-    for (int y = 0; y < image->height; y++) {
-        for (int x = 0; x < image->width; x++) {
-            RGBPixel pixel;
-            read(fd, &pixel, sizeof(RGBPixel));
-            
-            image->data[y * image->width + x] = pixel;
-        }
-    }
-    */
     printf("La imagen recibida tiene largo %d y alto %d ",image.width,image.height);
     printf("SE EJECUTÓ LEER COSAS POR EL PIPE DE FORMA EFECTIVA \n");
     write_bmp_nopointer("./DENTRORECEIVE.bmp",image);
@@ -186,13 +162,11 @@ int main(int argc, char *argv[]) {
     if (workers[0] == 0) {
             close(tuberias[1]);
             
-            //SOY EL HIJO
-            printf("    SOY UN WORKER, MI NUMERO ES 1 CON PID %d\n", getpid());
-            write_bmp("./HIJOFORK.bmp",image);
+ 
+            BMPImage imagenRecibida;
 
-            BMPImage imagenRecibida=receive_image_from_pipe(tuberias[0]);
-            write_bmp_nopointer("./FUERADELRECEIVE",imagenRecibida);
-            //write_bmp_nopointer("./IMAGENRECIBIDA.bmp",*imagenRecibida);
+            read(tuberias[0],&imagenRecibida,sizeof(BMPImage));
+            write_bmp("./final.bmp",&imagenRecibida);
            
 
 
@@ -207,7 +181,7 @@ int main(int argc, char *argv[]) {
             
            
             close(tuberias[0]);
-            send_image_through_pipe(tuberias[1],*image);
+            write(tuberias[1],image,sizeof(BMPImage));
   
             printf("  CREADO WORKER 1 CON PID %d\n", workers[0]);
             printf("JUSTO ANTES DEL WRITE DEL PIPE DE LA IMAGEN \n");
