@@ -43,19 +43,30 @@ BMPImage* receive_image_from_pipe(int fd) {
         return NULL;
     }
 
+    image->width=640;
+    image->height=426;
+    
+
     // Asignar memoria para los datos de píxeles
     image->data = (RGBPixel*)malloc(sizeof(RGBPixel) * image->width * image->height);
+
     if (!image->data) {
         perror("Error al asignar memoria para los datos de píxeles");
         free(image);
         return NULL;
     }
 
-    RGBPixel pixel;
- 
-    read(fd, &pixel, sizeof(RGBPixel));
-    image->data[1 * image->width + 20] = pixel;
 
+    for (int y = 0; y < image->height; y++) {
+        for (int x = 0; x < image->width; x++) {
+            RGBPixel pixel;
+            read(fd, &pixel, sizeof(RGBPixel));
+            
+            image->data[y * image->width + x] = pixel;
+        }
+    }
+    
+    write_bmp("./generadaEnWorker.bmp", image);
     // Leer los datos de píxeles del pipe
     /*
     if (read(fd, image->data, data_size) < data_size) {
@@ -65,7 +76,7 @@ BMPImage* receive_image_from_pipe(int fd) {
         return NULL;
     }
     */
-    
+    printf("SE EJECUTÓ LEER COSAS POR EL PIPE DE FORMA EFECTIVA \n");
 
     return image;
 }
@@ -80,20 +91,33 @@ int main(int argc, char *argv[]) {
 
 
     BMPImage* nuevaImagen = receive_image_from_pipe(indexPipe);
+   
+
+    
+    for (int y = 0; y < nuevaImagen->height; y++) {
+        for (int x = 0; x < nuevaImagen->width; x++) {
+            RGBPixel pixel = nuevaImagen->data[y * nuevaImagen->width + x];
+            printf("Pixel (%d, %d): R=%d, G=%d, B=%d\n", x, y, pixel.r, pixel.g, pixel.b);
+        }
+    }
+    
 
     //read(indexPipe,nuevaImagen, sizeof(BMPImage));
     
     printf("EL ANCHO DE LA IMAGEN LEIDA DIRECTAMENTE DESDE LA IMAGEN ES %d \n",nuevaImagen->width);
     
-    RGBPixel pixel = nuevaImagen->data[1 * nuevaImagen->width + 20];
-    printf("EL SINGULAR PIXEL ENVIADO POR EL BROKER AL WORKER R=%d, G=%d, B=%d\n", pixel.r, pixel.g, pixel.b);
-
+   
     printf("    EL INDEX DEL READ DEL PIPE ES %d \n",indexPipe);
     //read(indexPipe, buffer, sizeof(char)*10);
     //printf("    EL MENSAJE LEIDO ES %s \n",buffer);
    
     printf("  WORKER Ancho de la imagen: %d\n", width);
     printf("   WORKER Alto de la imagen: %d\n", height);
+
+
+
+
+
     printf("    Terminó el WORKER con PID %d\n",getpid());
 
     exit(21);

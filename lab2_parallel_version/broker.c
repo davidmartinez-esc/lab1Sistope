@@ -8,9 +8,47 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+void write_bmp_nopointer(const char* filename, BMPImage image) {
+    FILE* file = fopen(filename, "wb"); //wb = write binary
+    if (!file) {
+        fprintf(stderr, "Error: No se pudo abrir el archivo.\n");
+        return;
+    }
+
+    BMPHeader header;
+    header.type = 0x4D42;
+    header.size = sizeof(BMPHeader) + sizeof(BMPInfoHeader) + image.width * image.height * sizeof(RGBPixel);
+    header.offset = sizeof(BMPHeader) + sizeof(BMPInfoHeader);
+
+    BMPInfoHeader info_header;
+    info_header.size = sizeof(BMPInfoHeader);
+    info_header.width = image.width;
+    info_header.height = image.height;
+    info_header.planes = 1;
+    info_header.bit_count = 24; // está fijado en 24 en este ejemplo pero puede ser 1, 4, 8, 16, 24 o 32
+    info_header.size_image = image.width * image.height * sizeof(RGBPixel);
+
+    fwrite(&header, sizeof(BMPHeader), 1, file);
+    fwrite(&info_header, sizeof(BMPInfoHeader), 1, file);
+
+    int padding = (4 - (image.width * sizeof(RGBPixel)) % 4) % 4;
+    for (int y = image.height - 1; y >= 0; y--) {
+        for (int x = 0; x < image.width; x++) {
+            RGBPixel pixel = image.data[y * image.width + x];
+            fwrite(&pixel, sizeof(RGBPixel), 1, file);
+        }
+
+        RGBPixel padding_pixel = {0};
+        fwrite(&padding_pixel, sizeof(RGBPixel), padding, file);
+    }
+
+    fclose(file);
+}
+
 
 void send_image_through_pipe(int fd, BMPImage *image) {
     printf("EMPEZÓ EL SEND IMAGE \n");
+    
     size_t image_size;
     size_t data_size = image->width * image->height * sizeof(RGBPixel);
 
@@ -23,11 +61,15 @@ void send_image_through_pipe(int fd, BMPImage *image) {
     // Luego escribir la estructura BMPImage
     write(fd, image, sizeof(BMPImage));
     
-    RGBPixel pixel = image->data[1 * image->width + 20];
-    printf("Pixel R=%d, G=%d, B=%d\n", pixel.r, pixel.g, pixel.b);
-    write(fd,&pixel,sizeof(RGBPixel));
+    for (int y = 0; y < image->height; y++) {
+        for (int x = 0; x < image->width; x++) {
+            RGBPixel pixel = image->data[y * image->width + x];
+            write(fd,&pixel,sizeof(RGBPixel));
+        }
+    }
     // Y finalmente los datos de píxeles
     //write(fd, image->data, data_size);
+    
     printf("SE EJECUTÓ ENVIAR COSAS POR EL PIPE DE FORMA EFECTIVA\n");
 
     return;
@@ -62,22 +104,23 @@ int main(int argc, char *argv[]) {
    
     int i=0;
 
-    int fd[2];
-
-    if(pipe(fd) == -1){
-        // control de error
-        return 0;
-    }
-
     //DE AQUI EMPIEZA EL CODIGO IMPORTANTE
 
     const char* filename = N;
     BMPImage* image = read_bmp(filename);
 
+    BMPImage* imagenSaturada = saturate_bmp(image,1.5);
+
+    write_bmp_nopointer("./generadaEnBroker.bmp", *image);
+    write_bmp("./COPIAEnBroker.bmp", imagenSaturada);
+    
     if (!image) {
         exit(1);
         return 1;
     }
+    
+
+   
 
     printf("  Ancho de la imagen: %d\n", image->width);
     printf("  Alto de la imagen: %d\n", image->height);
@@ -92,51 +135,61 @@ int main(int argc, char *argv[]) {
     }
     */
     
+    
+
+    
 
     
     workers[0] = fork();
+    
 
     if (workers[0] == 0) {
             //SOY EL HIJO
             printf("    SOY UN WORKER, MI NUMERO ES %d CON PID %d\n", 1, getpid());
 
-            
-            sprintf(bufferHeight, "%d", image->height);
-            sprintf(bufferWidth, "%d", image->width);
-            sprintf(bufferReadEnd,"%d",fd[0]);
+            write_bmp("./COPIAFORK.bmp", image);
+            //sprintf(bufferHeight, "%d", image->height);
+            //sprintf(bufferWidth, "%d", image->width);
+            //sprintf(bufferReadEnd,"%d",fd[0]);
 
-            char* argv[]={"./worker", bufferHeight, bufferWidth,bufferReadEnd,NULL};
+            //char* argv[]={"./worker", bufferHeight, bufferWidth,bufferReadEnd,NULL};
 
-            execv(argv[0], argv);
-            sleep(1); 
+            //execv(argv[0], argv);
+             
             return 0; 
     } else if (workers[0] < 0) {
             // Error al hacer fork
             perror("fork");
     } else {
         //SOY EL PADRE
-            char buffer[10]="2121";
-    
-            printf("  CREADO WORKER %d CON PID %d\n", i+1, workers[0]);
+            write_bmp("./PADREFORK.bmp",image);
+  
+            printf("  CREADO WORKER 1 CON PID %d\n", workers[0]);
             printf("JUSTO ANTES DEL WRITE DEL PIPE DE LA IMAGEN \n");
             //write(fd[1], buffer, sizeof(char)*10);
-            send_image_through_pipe(fd[1],image);
+           
+            //send_image_through_pipe(fd[1],imagenSaturada);
             
+            waitpid(workers[0],NULL,0);
+            
+
+            printf("ANTES DEL FREE");
+            
+            free_bmp(image);
+            free_bmp(imagenSaturada);
+            printf("  EL nombre del archivo es %s \n",N);
+            printf("  Los valores ingresados son:\n NombreArchivo=%s\n numerodefiltros(f)=%i\n factor de saturacion(p)=%f \n Umbral para binarizar(u)=%f \n Umbral para clasificar(v)=%f \n NombreCarpeta(C)=%s \n NombreLogCsv(R)=%s \n numerodetrabajdores(W)=%i\n",N, f, p,u,v,C,R,W);
+            printf("  Terminó el BROKER \n");
          
         }
     
 
     // Esperar a que todos los hijos terminen
 
-    wait(NULL);
-
-    printf("ANTES DEL FREE");
-    free_bmp(image);
-
-    printf("  EL nombre del archivo es %s \n",N);
-    printf("  Los valores ingresados son:\n NombreArchivo=%s\n numerodefiltros(f)=%i\n factor de saturacion(p)=%f \n Umbral para binarizar(u)=%f \n Umbral para clasificar(v)=%f \n NombreCarpeta(C)=%s \n NombreLogCsv(R)=%s \n numerodetrabajdores(W)=%i\n",N, f, p,u,v,C,R,W);
-    printf("  Terminó el BROKER \n");
     
+
+    
+     
     exit(21);
     return 0;
 }
