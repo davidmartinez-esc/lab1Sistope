@@ -8,6 +8,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+
+
+
+
+
 void write_bmp_nopointer(const char* filename, BMPImage image) {
     FILE* file = fopen(filename, "wb"); //wb = write binary
     if (!file) {
@@ -46,27 +51,23 @@ void write_bmp_nopointer(const char* filename, BMPImage image) {
 }
 
 
-void send_image_through_pipe(int fd, BMPImage *image) {
+void send_image_through_pipe(int fd, BMPImage image) {
     printf("EMPEZÓ EL SEND IMAGE \n");
+    write_bmp_nopointer("./DENTROSENDIMAGE.bmp",image);
+   
     
-    size_t image_size;
-    size_t data_size = image->width * image->height * sizeof(RGBPixel);
-
-    // Calcular el tamaño total que se va a enviar (tamaño de la estructura + datos)
-    image_size = sizeof(BMPImage) + data_size;
-
-    // Escribir el tamaño primero para que el receptor sepa cuánto leer
-    write(fd, &image_size, sizeof(size_t));
 
     // Luego escribir la estructura BMPImage
-    write(fd, image, sizeof(BMPImage));
+    write(fd, &image, sizeof(BMPImage));
     
-    for (int y = 0; y < image->height; y++) {
-        for (int x = 0; x < image->width; x++) {
-            RGBPixel pixel = image->data[y * image->width + x];
+    /*
+    for (int y = 0; y < image.height; y++) {
+        for (int x = 0; x < image.width; x++) {
+            RGBPixel pixel = image.data[y * image.width + x];
             write(fd,&pixel,sizeof(RGBPixel));
         }
     }
+    */
     // Y finalmente los datos de píxeles
     //write(fd, image->data, data_size);
     
@@ -74,6 +75,46 @@ void send_image_through_pipe(int fd, BMPImage *image) {
 
     return;
 }
+
+BMPImage receive_image_from_pipe(int fd) {
+  
+    BMPImage image;
+ 
+
+    // Verificar que el tamaño sea válido
+    
+    // Almacenar el tamaño de los datos de píxeles
+
+    // Asignar memoria para la imagen
+
+   
+
+    // Leer la estructura BMPImage del pipe
+    read(fd, &image, sizeof(BMPImage));
+       
+
+    // Asignar memoria para los datos de píxeles
+    //image->data = (RGBPixel*)malloc(sizeof(RGBPixel) * image->width * image->height);
+
+    
+    /*
+
+    for (int y = 0; y < image->height; y++) {
+        for (int x = 0; x < image->width; x++) {
+            RGBPixel pixel;
+            read(fd, &pixel, sizeof(RGBPixel));
+            
+            image->data[y * image->width + x] = pixel;
+        }
+    }
+    */
+    printf("La imagen recibida tiene largo %d y alto %d ",image.width,image.height);
+    printf("SE EJECUTÓ LEER COSAS POR EL PIPE DE FORMA EFECTIVA \n");
+    write_bmp_nopointer("./DENTRORECEIVE.bmp",image);
+    return image;
+}
+
+
 
 int main(int argc, char *argv[]) {
     printf("  Empezó el broker \n");
@@ -104,6 +145,10 @@ int main(int argc, char *argv[]) {
    
     int i=0;
 
+    int tuberias[2];
+
+     int status=0;
+        
     //DE AQUI EMPIEZA EL CODIGO IMPORTANTE
 
     const char* filename = N;
@@ -131,28 +176,28 @@ int main(int argc, char *argv[]) {
         }
     }
     */
-    
-    
-
-    
+   pipe(tuberias);
+   
 
     
     workers[0] = fork();
     
 
     if (workers[0] == 0) {
+            close(tuberias[1]);
+            
             //SOY EL HIJO
             printf("    SOY UN WORKER, MI NUMERO ES 1 CON PID %d\n", getpid());
+            write_bmp("./HIJOFORK.bmp",image);
 
-            write_bmp("./COPIAFORK.bmp", image);
-            //sprintf(bufferHeight, "%d", image->height);
-            //sprintf(bufferWidth, "%d", image->width);
-            //sprintf(bufferReadEnd,"%d",fd[0]);
+            BMPImage imagenRecibida=receive_image_from_pipe(tuberias[0]);
+            write_bmp_nopointer("./FUERADELRECEIVE",imagenRecibida);
+            //write_bmp_nopointer("./IMAGENRECIBIDA.bmp",*imagenRecibida);
+           
 
-            //char* argv[]={"./worker", bufferHeight, bufferWidth,bufferReadEnd,NULL};
 
-            //execv(argv[0], argv);
-            
+
+        
              
     } else if (workers[0] < 0) {
             // Error al hacer fork
@@ -160,14 +205,22 @@ int main(int argc, char *argv[]) {
     } else {
         //SOY EL PADRE
             
+           
+            close(tuberias[0]);
+            send_image_through_pipe(tuberias[1],*image);
   
             printf("  CREADO WORKER 1 CON PID %d\n", workers[0]);
             printf("JUSTO ANTES DEL WRITE DEL PIPE DE LA IMAGEN \n");
-            //write(fd[1], buffer, sizeof(char)*10);
-           
-            //send_image_through_pipe(fd[1],imagenSaturada);
+
             
-            waitpid(workers[0],NULL,0);
+
+
+
+
+
+            
+            wait(&status);
+
             write_bmp("./PADREFORK.bmp",image);
             
 
@@ -180,14 +233,7 @@ int main(int argc, char *argv[]) {
          
         }
     
-
-    // Esperar a que todos los hijos terminen
-
     free_bmp(image);
-
-
-    
-      printf("TEMRINO EL WORKER \n");
-    exit(21);
+    exit(EXIT_SUCCESS);
     return 0;
 }

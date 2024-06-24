@@ -20,7 +20,9 @@ COMANDOS DE PRUEBA EN LINUX
 ./SALIDA -N imagen -f 2 -p 20 -C Ejemplo_nombre -R Nombre_resultado -W 5
 
 gcc worker.c funciones.c -o worker
+
 gcc broker.c funciones.c -o broker
+
 gcc lab2.c funciones.c  -o SALIDA
 
 

@@ -66,7 +66,7 @@ BMPImage* receive_image_from_pipe(int fd) {
         }
     }
     
-    write_bmp("./generadaEnWorker.bmp", image);
+
     // Leer los datos de píxeles del pipe
     /*
     if (read(fd, image->data, data_size) < data_size) {
