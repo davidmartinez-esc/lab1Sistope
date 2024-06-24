@@ -108,12 +108,9 @@ int main(int argc, char *argv[]) {
 
     const char* filename = N;
     BMPImage* image = read_bmp(filename);
-
-    BMPImage* imagenSaturada = saturate_bmp(image,1.5);
-
     write_bmp_nopointer("./generadaEnBroker.bmp", *image);
-    write_bmp("./COPIAEnBroker.bmp", imagenSaturada);
-    
+
+
     if (!image) {
         exit(1);
         return 1;
@@ -145,7 +142,7 @@ int main(int argc, char *argv[]) {
 
     if (workers[0] == 0) {
             //SOY EL HIJO
-            printf("    SOY UN WORKER, MI NUMERO ES %d CON PID %d\n", 1, getpid());
+            printf("    SOY UN WORKER, MI NUMERO ES 1 CON PID %d\n", getpid());
 
             write_bmp("./COPIAFORK.bmp", image);
             //sprintf(bufferHeight, "%d", image->height);
@@ -155,14 +152,14 @@ int main(int argc, char *argv[]) {
             //char* argv[]={"./worker", bufferHeight, bufferWidth,bufferReadEnd,NULL};
 
             //execv(argv[0], argv);
+            
              
-            return 0; 
     } else if (workers[0] < 0) {
             // Error al hacer fork
             perror("fork");
     } else {
         //SOY EL PADRE
-            write_bmp("./PADREFORK.bmp",image);
+            
   
             printf("  CREADO WORKER 1 CON PID %d\n", workers[0]);
             printf("JUSTO ANTES DEL WRITE DEL PIPE DE LA IMAGEN \n");
@@ -171,12 +168,12 @@ int main(int argc, char *argv[]) {
             //send_image_through_pipe(fd[1],imagenSaturada);
             
             waitpid(workers[0],NULL,0);
+            write_bmp("./PADREFORK.bmp",image);
             
 
             printf("ANTES DEL FREE");
             
-            free_bmp(image);
-            free_bmp(imagenSaturada);
+            
             printf("  EL nombre del archivo es %s \n",N);
             printf("  Los valores ingresados son:\n NombreArchivo=%s\n numerodefiltros(f)=%i\n factor de saturacion(p)=%f \n Umbral para binarizar(u)=%f \n Umbral para clasificar(v)=%f \n NombreCarpeta(C)=%s \n NombreLogCsv(R)=%s \n numerodetrabajdores(W)=%i\n",N, f, p,u,v,C,R,W);
             printf("  Terminó el BROKER \n");
@@ -186,10 +183,11 @@ int main(int argc, char *argv[]) {
 
     // Esperar a que todos los hijos terminen
 
-    
+    free_bmp(image);
+
 
     
-     
+      printf("TEMRINO EL WORKER \n");
     exit(21);
     return 0;
 }
