@@ -122,6 +122,7 @@ int main(int argc, char *argv[]) {
     int i=0;
 
     int tuberias[2];
+    
 
      int status=0;
         
@@ -129,7 +130,7 @@ int main(int argc, char *argv[]) {
 
     const char* filename = N;
     BMPImage* image = read_bmp(filename);
-    write_bmp_nopointer("./generadaEnBroker.bmp", *image);
+
 
 
     if (!image) {
@@ -152,21 +153,22 @@ int main(int argc, char *argv[]) {
         }
     }
     */
-   pipe(tuberias);
-   
+    pipe(tuberias);
+  
 
     
     workers[0] = fork();
-    
-
     if (workers[0] == 0) {
-            close(tuberias[1]);
-            
- 
-            BMPImage imagenRecibida;
+           close(tuberias[1]); // Cerramos el extremo de escritura del pipe en el hijo
 
-            read(tuberias[0],&imagenRecibida,sizeof(BMPImage));
-            write_bmp("./final.bmp",&imagenRecibida);
+        // Redirigir la entrada estándar para leer desde el pipe
+           dup2(tuberias[0], STDIN_FILENO);
+           //SOY EL HIJO
+           
+
+            char* argumentos[]={"./worker", "3", "4", NULL};
+    // Para poder ejecutar debe existir el ejecutable
+            execv(argumentos[0], argumentos);
            
 
 
@@ -178,27 +180,37 @@ int main(int argc, char *argv[]) {
             perror("fork");
     } else {
         //SOY EL PADRE
-            
+            //char texto[100]="David y Claudio";
+            int ancho= image->width;
            
             close(tuberias[0]);
-            write(tuberias[1],image,sizeof(BMPImage));
+            write(tuberias[1],&image->width,sizeof(int));
+            write(tuberias[1],&image->height,sizeof(int));
+            //write(tuberias[1],texto,sizeof(char)*100);
+            
+        for (int y = 0; y < image->height; y++) {
+            for (int x = 0; x < image->width; x++) {
+            RGBPixel pixelBonito = image->data[y * image->width + x];
+            int r=(int) pixelBonito.r;
+            int g=(int) pixelBonito.g;
+            int b=(int) pixelBonito.b;
+            write(tuberias[1],&r,sizeof(int));
+            write(tuberias[1],&g,sizeof(int));
+            write(tuberias[1],&b,sizeof(int));
+            }
+        }
+            
   
             printf("  CREADO WORKER 1 CON PID %d\n", workers[0]);
             printf("JUSTO ANTES DEL WRITE DEL PIPE DE LA IMAGEN \n");
 
-            
 
-
-
-
-
-            
             wait(&status);
 
-            write_bmp("./PADREFORK.bmp",image);
+            //write_bmp("./PADREFORK.bmp",image);
             
 
-            printf("ANTES DEL FREE");
+            printf("ANTES DEL FREE \n");
             
             
             printf("  EL nombre del archivo es %s \n",N);

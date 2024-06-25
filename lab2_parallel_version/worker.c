@@ -8,6 +8,44 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
+void write_bmp_nopointer(const char* filename, BMPImage image) {
+    FILE* file = fopen(filename, "wb"); //wb = write binary
+    if (!file) {
+        fprintf(stderr, "Error: No se pudo abrir el archivo.\n");
+        return;
+    }
+
+    BMPHeader header;
+    header.type = 0x4D42;
+    header.size = sizeof(BMPHeader) + sizeof(BMPInfoHeader) + image.width * image.height * sizeof(RGBPixel);
+    header.offset = sizeof(BMPHeader) + sizeof(BMPInfoHeader);
+
+    BMPInfoHeader info_header;
+    info_header.size = sizeof(BMPInfoHeader);
+    info_header.width = image.width;
+    info_header.height = image.height;
+    info_header.planes = 1;
+    info_header.bit_count = 24; // está fijado en 24 en este ejemplo pero puede ser 1, 4, 8, 16, 24 o 32
+    info_header.size_image = image.width * image.height * sizeof(RGBPixel);
+
+    fwrite(&header, sizeof(BMPHeader), 1, file);
+    fwrite(&info_header, sizeof(BMPInfoHeader), 1, file);
+
+    int padding = (4 - (image.width * sizeof(RGBPixel)) % 4) % 4;
+    for (int y = image.height - 1; y >= 0; y--) {
+        for (int x = 0; x < image.width; x++) {
+            RGBPixel pixel = image.data[y * image.width + x];
+            fwrite(&pixel, sizeof(RGBPixel), 1, file);
+        }
+
+        RGBPixel padding_pixel = {0};
+        fwrite(&padding_pixel, sizeof(RGBPixel), padding, file);
+    }
+
+    fclose(file);
+}
+
+
 
 BMPImage* receive_image_from_pipe(int fd) {
     size_t image_size;
@@ -84,42 +122,67 @@ BMPImage* receive_image_from_pipe(int fd) {
 int main(int argc, char *argv[]) {
     printf("    Empezó el WORKER \n");
    
-    int height=atoi(argv[1]);
-    int width=atoi(argv[2]);
-    int indexPipe=atoi(argv[3]);
-    char buffer[10];
+    int tuberiasCero=atoi(argv[1]);
+    int tuberiasUno=atoi(argv[2]);
 
+    BMPImage imagenRecibida;
+    //char texto[100];
 
-    BMPImage* nuevaImagen = receive_image_from_pipe(indexPipe);
-   
-
+    printf("TUBERIAS CERO %d TUBERIAS UNO %d \n", tuberiasCero,tuberiasUno);
     
-    for (int y = 0; y < nuevaImagen->height; y++) {
-        for (int x = 0; x < nuevaImagen->width; x++) {
-            RGBPixel pixel = nuevaImagen->data[y * nuevaImagen->width + x];
-            printf("Pixel (%d, %d): R=%d, G=%d, B=%d\n", x, y, pixel.r, pixel.g, pixel.b);
+    close(tuberiasUno);
+            
+  
+
+    //read(STDIN_FILENO,&imagenRecibida,sizeof(BMPImage));
+
+    //read(STDIN_FILENO,&texto,sizeof(char)*100);
+
+    read(STDIN_FILENO,&imagenRecibida.width,sizeof(int));
+    read(STDIN_FILENO,&imagenRecibida.height,sizeof(int));
+
+    imagenRecibida.data = (RGBPixel*)malloc(imagenRecibida.width * imagenRecibida.height * sizeof(RGBPixel));
+
+    int r;
+    int g;
+    int b;
+     for (int y = 0; y < imagenRecibida.height; y++) {
+            for (int x = 0; x < imagenRecibida.width; x++) {
+            RGBPixel pixelRecibido;
+            read(STDIN_FILENO,&r,sizeof(int));
+            read(STDIN_FILENO,&g,sizeof(int));
+            read(STDIN_FILENO,&b,sizeof(int));
+            pixelRecibido.r=(unsigned char) r;
+            pixelRecibido.g=(unsigned char) g;
+            pixelRecibido.b=(unsigned char) b;
+
+            imagenRecibida.data[y * imagenRecibida.width + x] = pixelRecibido;
+            //imagenRecibida.data[y * imagenRecibida.width + x]=pixelRecibido;
+            }
+        }
+    
+    //printf("El texto es %s \n",texto);
+    printf("EL CHANCHO LEIDO ES %d Y EL LARGO ES %d \n",imagenRecibida.width, imagenRecibida.height);
+    
+    for (int y = 0; y < imagenRecibida.height; y++) {
+        for (int x = 0; x < imagenRecibida.width; x++) {
+            RGBPixel pixel = imagenRecibida.data[y * imagenRecibida.width + x];
+            printf("R= %d G=%d B=%d \n",pixel.r,pixel.g,pixel.b);
         }
     }
     
-
-    //read(indexPipe,nuevaImagen, sizeof(BMPImage));
-    
-    printf("EL ANCHO DE LA IMAGEN LEIDA DIRECTAMENTE DESDE LA IMAGEN ES %d \n",nuevaImagen->width);
-    
    
-    printf("    EL INDEX DEL READ DEL PIPE ES %d \n",indexPipe);
-    //read(indexPipe, buffer, sizeof(char)*10);
-    //printf("    EL MENSAJE LEIDO ES %s \n",buffer);
-   
-    printf("  WORKER Ancho de la imagen: %d\n", width);
-    printf("   WORKER Alto de la imagen: %d\n", height);
+    
+     
 
+    write_bmp_nopointer("./finalmente.bmp",imagenRecibida);
+    BMPImage* saturada=saturate_bmp(&imagenRecibida,5.0);
+    write_bmp("./MAJORAS.bmp",saturada);
+    
+    printf("PASÓ EL WRITE \n");
+ 
+    printf("TERMINÓ EL WORKER \n");
 
-
-
-
-    printf("    Terminó el WORKER con PID %d\n",getpid());
-
-    exit(21);
+    exit(EXIT_SUCCESS);
     return 0;
 }
